@@ -1,4 +1,4 @@
-# BUMS -Basic User Management System (Setup)
+# BUMS - Basic User Management System (Setup)
 
 🟢 Upload the BUMS folder to the ROOT location of the website.
 
