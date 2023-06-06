@@ -20,3 +20,19 @@
 
 
 ⚠️ "bums_logout.php" must be visited manually to reset the session in case of any error.
+
+#
+
+![Login Page](/GITHUB/LOGIN.png)
+
+#
+
+![Control Panel 1](/GITHUB/CP1.png)
+
+#
+
+![Control Panel 2](/GITHUB/CP2.png)
+
+#
+
+![Control Panel 3](/GITHUB/CP3.png)
