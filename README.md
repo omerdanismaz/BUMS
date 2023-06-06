@@ -16,7 +16,7 @@
 
 #
 
-⚠️ After logging in with "bums_login.php," the "bums_controlpanel" page should be manually visited.
+⚠️ After logging in with "bums_login.php," the "bums_controlpanel.php" page should be manually visited.
 
 
 ⚠️ "bums_logout.php" must be visited manually to reset the session in case of any error.
