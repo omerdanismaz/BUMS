@@ -46,6 +46,7 @@
                     <div class="popup_content">
                         <h2>' . $cfg_pop_up_configs[$i]['pop_up_title'] . '</h2>
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="' . $_SESSION["csrf_token"] . '">
                             <input type="text" name="new_' . $cfg_pop_up_configs[$i]['update']. '"></input><br>
                             <button type="submit">SEND DATA</button>
                         </form>

@@ -17,27 +17,6 @@
         exit();
     }
 
-    // Logout button.
-    if (isset($_POST['logout']))
-    {
-        include($_SERVER['DOCUMENT_ROOT'].'/BAS/bas_logout_include.php');
-    }
-
-    // Change Administrator Password button.
-    if (isset($_POST['new_password']))
-    {
-        $username = "bums_admin";
-        $new_password = $_POST['new_password'];
-        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-
-        $sql = "UPDATE bas_users SET user_password = :hashed_password WHERE user_username = :username";
-
-        $statement_new_pass = $conn->prepare($sql);
-        $statement_new_pass->execute(array(':hashed_password' => $hashed_password, ':username' => $username));
-
-        include($_SERVER['DOCUMENT_ROOT'].'/BAS/bas_logout_include.php');
-    }
-
     // Search User button.
     if (isset($_GET['search_user']))
     {
@@ -49,77 +28,102 @@
         $results = $statement_search->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Pop-Up Button Group
-    $update_fields = array('firstname', 'lastname', 'username', 'email', 'authoritylevel', 'mutestatus', 'banstatus');
-
-    // Pop-Up Button Group SQL Commands
-    foreach ($update_fields as $field)
+    // Checking CSRF Token.
+    if (isset($_SESSION["csrf_token"]) && isset($_POST["csrf_token"]) && $_SESSION["csrf_token"] == $_POST["csrf_token"])
     {
-        if (isset($_POST['new_'.$field]))
+        // Logout button.
+        if (isset($_POST['logout']))
         {
-            $searched_user = $_GET['search_user'];
-            $new_value = $_POST['new_'.$field];
+            include($_SERVER['DOCUMENT_ROOT'].'/BAS/bas_logout_include.php');
+        }
 
-            // The administrator user's information cannot be changed.
-            if ($searched_user == "bums_admin")
+        // Change Administrator Password button.
+        if (isset($_POST['new_password']))
+        {
+            $username = "bums_admin";
+            $new_password = $_POST['new_password'];
+            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+
+            $sql = "UPDATE bas_users SET user_password = :hashed_password WHERE user_username = :username";
+
+            $statement_new_pass = $conn->prepare($sql);
+            $statement_new_pass->execute(array(':hashed_password' => $hashed_password, ':username' => $username));
+
+            include($_SERVER['DOCUMENT_ROOT'].'/BAS/bas_logout_include.php');
+        }
+
+        // Pop-Up Button Group
+        $update_fields = array('firstname', 'lastname', 'username', 'email', 'authoritylevel', 'mutestatus', 'banstatus');
+
+        // Pop-Up Button Group SQL Commands
+        foreach ($update_fields as $field)
+        {
+            if (isset($_POST['new_'.$field]))
             {
-                if ($field == 'firstname')
+                $searched_user = $_GET['search_user'];
+                $new_value = $_POST['new_'.$field];
+
+                // The administrator user's information cannot be changed.
+                if ($searched_user == "bums_admin")
                 {
-                    $new_value = "BUMS";
+                    if ($field == 'firstname')
+                    {
+                        $new_value = "BUMS";
+                    }
+
+                    if ($field == 'lastname')
+                    {
+                        $new_value = "ADMIN";
+                    }
+
+                    if ($field == 'username')
+                    {
+                        $new_value = "bums_admin";
+                    }
+
+                    if ($field == 'email')
+                    {
+                        $new_value = "bums_admin@mail.com";
+                    }
+
+                    if ($field == 'authoritylevel')
+                    {
+                        $new_value = 999;
+                    }
+
+                    if ($field == 'mutestatus' || $field == 'banstatus')
+                    {
+                        $new_value = 0;
+                    }
                 }
 
-                if ($field == 'lastname')
+                // Availability check on username or email change.
+                if ($field == 'email' || $field == 'username')
                 {
-                    $new_value = "ADMIN";
+                    $checkQuery = "SELECT COUNT(*) FROM bas_users WHERE user_".$field." = :new_value";
+                    $checkStatement = $conn->prepare($checkQuery);
+                    $checkStatement->execute(array(':new_value' => $new_value));
+                    $count = $checkStatement->fetchColumn();
+
+                    if ($count > 0)
+                    {
+                        continue;
+                    }
                 }
 
-                if ($field == 'username')
+                // The changes are being applied to the database.
+                $sql = "UPDATE bas_users SET user_".$field." = :new_value WHERE user_username = :searched_user";
+                $statement_update_info = $conn->prepare($sql);
+                $statement_update_info->execute(array(':new_value' => $new_value, ':searched_user' => $searched_user));
+
+                if($field == "username")
                 {
-                    $new_value = "bums_admin";
+                    BUMS_refreshPageAfterUserUpdate($new_value);
                 }
-
-                if ($field == 'email')
+                else
                 {
-                    $new_value = "bums_admin@mail.com";
+                    BUMS_refreshPageAfterUserUpdate($searched_user);
                 }
-
-                if ($field == 'authoritylevel')
-                {
-                    $new_value = 999;
-                }
-
-                if ($field == 'mutestatus' || $field == 'banstatus')
-                {
-                    $new_value = 0;
-                }
-            }
-
-            // Availability check on username or email change.
-            if ($field == 'email' || $field == 'username')
-            {
-                $checkQuery = "SELECT COUNT(*) FROM bas_users WHERE user_".$field." = :new_value";
-                $checkStatement = $conn->prepare($checkQuery);
-                $checkStatement->execute(array(':new_value' => $new_value));
-                $count = $checkStatement->fetchColumn();
-
-                if ($count > 0)
-                {
-                    continue;
-                }
-            }
-
-            // The changes are being applied to the database.
-            $sql = "UPDATE bas_users SET user_".$field." = :new_value WHERE user_username = :searched_user";
-            $statement_update_info = $conn->prepare($sql);
-            $statement_update_info->execute(array(':new_value' => $new_value, ':searched_user' => $searched_user));
-
-            if($field == "username")
-            {
-                BUMS_refreshPageAfterUserUpdate($new_value);
-            }
-            else
-            {
-                BUMS_refreshPageAfterUserUpdate($searched_user);
             }
         }
     }
@@ -138,6 +142,7 @@
                 <h1>BUMS</h1>
                 <h2>CONTROL PANEL</h2>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]; ?>">
                     <button type="submit" name="logout">LOGOUT</button>
                 </form>
             
@@ -146,6 +151,7 @@
                     <div class="popup_content">
                         <h2>CHANGE ADMIN PASSWORD</h2>
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]; ?>">
                             <input type="password" name="new_password"></input><br>
                             <button type="submit">CHANGE PASS.</button>
                         </form>
